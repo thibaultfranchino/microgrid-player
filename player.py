@@ -18,17 +18,22 @@ class Player:
 
 	def compute_all_load(self):
 		load = np.zeros(self.horizon)
-		# for time in range(self.horizon):
-		# 	load[time] = self.compute_load(time)
+		for time in range(self.horizon):
+			load[time] = self.compute_load(time)
 		return load
 
 	def take_decision(self, time):
-		# TO BE COMPLETED
+		l_1 = compute_all_load(self)
+		l_2 = compute_all_load(self)
+		l_3 = compute_all_load(self)
+		l_4 = compute_all_load(self)
+		
+		
 		return 0
 
 	def compute_load(self, time):
 		load = self.take_decision(time)
-		# do stuff ?
+		# do stuff?
 		return load
 
 	def reset(self):
