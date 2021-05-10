@@ -23,11 +23,17 @@ class Player:
 		return load
 
 	def take_decision(self, time):
-		l_1 = compute_all_load(self)
-		l_2 = compute_all_load(self)
-		l_3 = compute_all_load(self)
-		l_4 = compute_all_load(self)
-		#test
+		l_1_v1g = compute_all_load(self)
+		l_2_v1g = compute_all_load(self)
+		l_3_v1g = compute_all_load(self)
+		l_4_v1g = compute_all_load(self)
+		l_1_v2g = compute_all_load(self)
+		l_2_v2g = compute_all_load(self)
+		l_3_v2g = compute_all_load(self)
+		l_4_v2g = compute_all_load(self)
+		l_4 = l_1_v1g + l_2_v1g + l_3_v1g + l_4_v1g + l_1_v2g + l_2_v2g + l_3_v2g + l_4_v2g
+		
+		
 		
 		return 0
 
