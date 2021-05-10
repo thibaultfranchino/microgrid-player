@@ -12,6 +12,9 @@ class Player:
 
 	def set_scenario(self, scenario_data):
 		self.data = scenario_data
+		arr_dep = list(scenario_data_values())[:self.nb_slow + self.nb_fast]
+		self.depart = {"slow": [d[1] for d in arr_dep[:self.nb_slow]], "fast": [d[1] for d in arr_dep[self.nb_slow:self.nb_fast + self.nb_slow]]}
+		self.arrival = {"slow": [d[0] for d in arr_dep[:self.nb_slow]], "fast": [d[0] for d in arr_dep[self.nb_slow:self.nb_fast + self.nb_slow]]}
 
 	def set_prices(self, prices):
 		self.prices = prices
