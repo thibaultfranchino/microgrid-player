@@ -27,7 +27,7 @@ class Player:
 		l_2 = compute_all_load(self)
 		l_3 = compute_all_load(self)
 		l_4 = compute_all_load(self)
-		
+		#test
 		
 		return 0
 
