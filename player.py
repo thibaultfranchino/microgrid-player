@@ -21,7 +21,7 @@ class Player:
 		self.data = scenario_data
 		# depart et arr contiennent respectivement la liste des heures de départ et d'arrivée des véhicules à la date d
 		d="01/01/2014"
-		self.depart=list(scenario_data[(scenario_data["day"] == d)]["time_slot_dep"][:p.nb_slow + p.nb_fast])
+		self.depart = list(scenario_data[(scenario_data["day"] == d)]["time_slot_dep"][:p.nb_slow + p.nb_fast])
 		self.arr = list(scenario_data[(scenario_data["day"] == d)]["time_slot_arr"][:p.nb_slow + p.nb_fast])
 
 	def set_prices(self, prices):
@@ -29,41 +29,46 @@ class Player:
 
 	def compute_all_load(self):
 		load = np.zeros(self.horizon)
-		# l est une liste temporaire, on reprend ses valeurs et on les réordonne avant de les mettre dans load
+		# on stocke dans une variable temporaire load_tmp la liste load pour pouvoir mettre les valeurs dans l'ordre dans load par la suite
+		load_tmp=np.zeros(self.horizon)
 
-		#on construit l en remplissant d'abord les voitures "slow" puis les "fast" pour chaque pas de temps
-		l=np.zeros(self.horizon)
-
-		#chargement prend en compte le chargement en cours pour chacun des véhicules
+		#chargement rend compte du fonctionnement du chargement des EVs
 		chargement=np.zeros(self.nb_slow+self.nb_fast)
 
+		
+		# on fait une boucle sur les pas de temps de horizon
+		# on remplit les valeurs de load_tmp au fur et a mesure en commencant par les EV lents
 		for time in range(self.horizon):
-			#consom<40
-			consom=0
+			consommation=0
 
 			for i in range(self.nb_slow):
-				plus = self.rho_c * min(self.pslow, min((10 - chargement[i])/self.rho_c, 40 - consom))
-				chargement[i] += plus
-				consom += plus
+				# on charge soit au chargement maximal (pslow) soit jusqu'au chargement complet (40 - consommation)
+				# soit a la charge suffisante de 25% (10 - chargement[i])
+				# pour choisir on prend le minimum de ces conditions (on charge seulement ce qui est necessaire)
+				ajout = min((10 - chargement[i])/self.rho_c, min(self.pslow, 40 - consommation))
+				chargement[i] += self.rho_c * ajout
+				consommation += self.rho_c * ajout
 
 			for i in range(self.nb_slow,self.nb_slow+self.nb_fast):
-				plus=self.rho_c*min(self.pfast,min((10-chargement[i])/self.rho_c,40-consom))
-				chargement[i]+=plus
-				consom+=plus
-			l[time]=consom
+				#A EXPLIQUER
+				ajout = min((10 - chargement[i])/self.rho_c, min(self.pfast, 40 - consommation))
+				chargement[i] += self.rho_c * ajout
+				consommation += self.rho_c * ajout
+			
+			load_tmp[time]=consommation
 
-		#on réordonne les consomations en mettant à chaque fois la conso la plus importante sur le prix le faible restant
-		m = np.min(self.depart)
-		copie_prix=self.prices[:m].copy()
-		cpt=0
-		while cpt<m:
-			arg_min = np.argmin(copie_prix)
-			arg_max=np.argmax(l)
-			load[arg_min]=l[arg_max]
-			copie_prix[arg_min] = np.inf
-			l[arg_max] = 0
-			cpt+=1
-			#load[time] = self.compute_load(time)
+		# on fait correspondre les termes de load les plus importants aux prix les plus faibles
+		minimum = np.min(self.depart)
+		prices_copy=self.prices[:minimum].copy()
+		k=0
+		while k<minimum:
+			arg_min = np.argmin(prices_copy)
+			arg_max=np.argmax(load_tmp)
+			load[arg_min]=load_tmp[arg_max]
+			prices_copy[arg_min] = np.inf
+			load_tmp[arg_max] = 0
+			k+=1
+			#load[t] = self.compute_load(t)
 		print(load)
 		return load
 
@@ -80,18 +85,29 @@ class Player:
 		# reset all observed data
 		pass
 
-f=pa.read_csv(ev_scrnario, sep = ";","ev_scenarios.csv")
+fichier=pa.read_csv(ev_scenario, sep = ";","ev_scenarios.csv")
 p=Player()
 p.__init__()
-p.set_scenario(f)
+p.set_scenario(fichier)
 p.set_prices(random_lambda)
 
 l=p.compute_all_load()
 
-#fonction de cout qui ne prend pas encore en compte les amendes si les voitures ne sont pas chargées à temps
+# on implemente la fonction de cout
 def cout(p,l):
 	c=0
 	for time in range(48):
 		c+=l[time]*p[time]
 	return c
 print(cout(p.prices,l))
+
+if __name__=="__main__":
+	import os
+	print(os.getcwd())
+	fichier=pa.read_csv("ev_scenarios.csv") #mettre le chemin complet si cela ne marche pas
+	p=Player()
+	p.__init__()
+	p.set_scenario(fichier)
+	p.set_prices(random_lambda)
+	
+	l=p.compute_all_load()
