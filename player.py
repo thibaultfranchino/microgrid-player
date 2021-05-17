@@ -15,44 +15,48 @@ class Player:
 		arr_dep = list(scenario_data_values())[:self.nb_slow + self.nb_fast]
 		self.depart = {"slow": [d[1] for d in arr_dep[:self.nb_slow]], "fast": [d[1] for d in arr_dep[self.nb_slow:self.nb_fast + self.nb_slow]]}
 		self.arrival = {"slow": [d[0] for d in arr_dep[:self.nb_slow]], "fast": [d[0] for d in arr_dep[self.nb_slow:self.nb_fast + self.nb_slow]]}
+		# depart et arr contiennent respectivement la liste des heures de départ et d'arrivée des véhicules à la date d
+		d="01/01/2014"
+		self.depart=list(scenario_data[(scenario_data["day"] == d)]["time_slot_dep"][:p.nb_slow + p.nb_fast])
+		self.arr = list(scenario_data[(scenario_data["day"] == d)]["time_slot_arr"][:p.nb_slow + p.nb_fast])
 
 	def set_prices(self, prices):
 		self.prices = prices
 
 	def compute_all_load(self):
 		load = np.zeros(self.horizon)
+		loadbis=np.zeros(self.nb_slow+self.nb_fast)
 		for time in range(self.horizon):
-			load[time] = self.compute_load(time)
-		return load
+			conso=0
+			for i in range(self.nb_slow):
+				plus = self.rho_c * min(self.pslow, min((10 - loadbis[i])/self.rho_c, 40 - conso))
+				loadbis[i] += plus
+				conso += plus
+			for i in range(self.nb_slow,self.nb_slow+self.nb_fast):
+				plus=self.rho_c*min(self.pfast,min((10-loadbis[i])/self.rho_c,40-conso))
+				loadbis[i]+=plus
+				conso+=plus
+			load[time]=conso
+		compteur=self.horizon-1
+		
+		m = np.min(self.depart)
+		prix=self.prices[:m].copy()
+		arg_max=0
+		compteur=0
+		while compteur<m:
+			arg_min = np.argmin(prix)
 
-	def take_decision(self, time):
-		#mettre self.l_1_v1g  ?
-		l_1_v1g = compute_all_load(self)
-		l_2_v1g = compute_all_load(self)
-		l_3_v1g = compute_all_load(self)
-		l_4_v1g = compute_all_load(self)
-		l_1_v2g = compute_all_load(self)
-		l_2_v2g = compute_all_load(self)
-		l_3_v2g = compute_all_load(self)
-		l_4_v2g = compute_all_load(self)
-		if (time == self.horizon) and 
-		(3*0.25 > l_1_v1g[time] or 3*0.25 > l_2_v1g[time] 
-		 or 22*0.25 > l_3_v1g[time] or 22*0.25 > l_4_v1g[time]):
-			# on paie une amende de 5euros par vehicule
-		l_4 = l_1_v1g + l_2_v1g + l_3_v1g + l_4_v1g + l_1_v2g + l_2_v2g + l_3_v2g + l_4_v2g
-		while (abs( l_4[time]) <= 40) 
-		and (l_1_v1g[time] <= 3 and l_2_v1g[time] <= 3) 
-		and (l_3_v1g[time] <= 22 and l_4_v1g[time] <= 22)
-		and (abs(l_1_v2g[time]) <= 3 and abs(l_2_v2g[time]) <= 3) 
-		and (abs(l_3_v2g[time]) <= 22 and abs(l_4_v2g[time]) <= 22):
-			
-		return 0
 
-	def compute_load(self, time):
-		load = self.take_decision(time)
-		# do stuff?
-		return load
+p.set_scenario(f)
+p.set_prices(random_lambda)
 
-	def reset(self):
-		# reset all observed data
-		pass
+
+l=p.compute_all_load()
+
+#fonction de cout qui ne prend pas encore en compte les amendes si les voitures ne sont pas chargées à temps
+def cout(p,l):
+	c=0
+	for time in range(48):
+		c+=l[time]*p[time]
+	return c
+print(cout(p.prices,l))
